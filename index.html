@@ -1,0 +1,55 @@
+<html lang="en">
+const t = now(); if(this.local.reloading) return;
+if(this.local.ammo[wName] <= 0) return;
+if(t - this.local.lastShot < w.fireRate) return;
+// create bullet locally and send to server
+this.local.lastShot = t; this.local.ammo[wName] -= 1;
+// compute bullet dir
+const angle = this.local.rot; const vx = Math.cos(angle)*CONFIG.bulletSpeed; const vy = Math.sin(angle)*CONFIG.bulletSpeed;
+const bullet = new Bullet(this.local.id, this.local.x, this.local.y, vx, vy, wName);
+// optimistic local effect: send to server
+this.net.send('shoot', {owner:this.local.id, x:this.local.x, y:this.local.y, vx, vy, weapon:wName});
+}
+update(dt){
+// physics / bullets simple on server — client only renders and predicts
+// update UI
+document.getElementById('weaponName').textContent = this.local.weapon.toUpperCase();
+document.getElementById('ammo').textContent = this.local.ammo[this.local.weapon];
+document.getElementById('mag').textContent = CONFIG[this.local.weapon].mag;
+document.getElementById('health').textContent = Math.round(this.local.health);
+document.getElementById('ability').textContent = this.local.canDoubleJump ? 'Air Jump (available)' : 'Air Jump (used)';
+// send small movement correction occasionally (already done in sendState interval)
+}
+_loop(){
+const frame = () => {
+const nowt = now(); const dt = Math.min((nowt - this.lastUpdate)/1000, 0.05); this.lastUpdate = nowt;
+this._processInput(dt);
+this.update(dt);
+this.renderer.draw();
+requestAnimationFrame(frame);
+};
+frame();
+}
+}
+
+
+/* ------------------- SMALL HELPERS ------------------- */
+function generateId(){return Math.random().toString(36).slice(2,9)}
+
+
+/* ------------------- BOOT ------------------- */
+const canvas = document.getElementById('world');
+const game = new Game(canvas);
+
+
+// Display player list UI
+setInterval(()=>{
+const playersList = document.getElementById('playersList'); playersList.innerHTML = '';
+const players = Object.values(game.world.players).sort((a,b)=>b.kills-a.kills);
+for(const p of players){
+const el = document.createElement('div'); el.innerHTML = `<strong>${p.name}</strong> — ${p.kills} K / ${p.deaths} D — HP: ${Math.round(p.health)}`; playersList.appendChild(el);
+}
+},250);
+
+
+</script>
